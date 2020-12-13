@@ -1,3 +1,6 @@
+
+// CARON Maxime TP3A
+
 #include "algorithms.h"
 
 #include <assert.h>
@@ -95,7 +98,8 @@ void array_remove(struct array *self, size_t index) {
 }
 
 int array_get(const struct array *self, size_t index) {
-  return self-> data[index];
+  if(index < self->size) return self-> data[index];
+  return 0;
 }
 
 void array_set(struct array *self, size_t index, int value) {
@@ -122,7 +126,7 @@ size_t array_search_sorted(const struct array *self, int value) {
 }
 
 bool array_is_sorted(const struct array *self) {
-  for(size_t i = 0; i < self->size; ++i){
+  for(size_t i = 1; i < self->size; ++i){
     if(self->data[i] < self->data[i-1]) return false;
   }
   return true;
@@ -196,7 +200,7 @@ bool array_is_heap(const struct array *self) {
 
 void array_heap_add(struct array *self, int value) {
   size_t i = self->size;
-  self->data[i] = value;
+  array_push_back(self,value);
   while (i > 0) {
     size_t j = (i - 1) / 2;
     if (self->data[i] < self->data[j]) {
@@ -211,18 +215,11 @@ int array_heap_top(const struct array *self) {
   return self->data[0];
 }
 
-void array_pop_front(struct array *self){
-  for(size_t  i =0; i<self->size; ++i){
-    self->data[i] =self->data[i+1];
-  }
-  --self->size;
-}
-
 void array_heap_remove_top(struct array *self) {
-  size_t n = self->size;
+  size_t n = (int)(self->size);
   self->data[0] = self->data[n-1];
-  size_t i = 0;
-  while (i < (n-1)/2){
+  size_t i =0;
+  while (i < ((n)/2)){
     size_t lt = 2 * i + 1;
     size_t rt = 2 * i + 2;
     if (self->data[i] > self->data[lt] && self->data[i] > self->data[rt]) {
@@ -232,6 +229,7 @@ void array_heap_remove_top(struct array *self) {
     array_swap(self, i, j);
     i = j;
   }
+  array_pop_back(self);
 }
 
 /*
@@ -430,36 +428,44 @@ void list_split(struct list *self, struct list *out1, struct list *out2) {
 
 
 void list_merge(struct list *self, struct list *in1, struct list *in2) {
-    size_t grande_taille=list_size(in1)+list_size(in2);
-    for(size_t i=0;i<grande_taille;++i) {
-        if (in2->first==NULL) {
-            list_push_back(self,in1->first->data);
-            list_pop_front(in1);
-        }
-        else if (in1->first==NULL) {
-            list_push_back(self,in2->first->data);
-            list_pop_front(in2);
-        }
-        else {
-            if ((in1->first->data)<=(in2->first->data)) {
-                list_push_back(self,in1->first->data);
-                list_pop_front(in1);
-            }
-            else if (in1->first->data>in2->first->data){
-                list_push_back(self,in2->first->data);
-                list_pop_front(in2);
-            }
-        }
+  while(in1->first!=NULL && in2->first!=NULL){
+    if(in1->first->data<in2->first->data){
+      list_push_back(self,in1->first->data);
+      list_pop_front(in1);
     }
+    else{
+      list_push_back(self,in2->first->data);
+      list_pop_front(in2);
+    }
+  }
+  if(in2->first!=NULL){
+    while(in2->first!=NULL){
+      list_push_back(self,in2->first->data);
+      list_pop_front(in2);
+    }
+  }
+  else if(in1->first!=NULL){
+    while(in1->first!=NULL){
+      list_push_back(self,in1->first->data);
+      list_pop_front(in1);
+    }
+  }
 }
 
 void list_merge_sort(struct list *self) {
-  struct list *buff1 = malloc(sizeof(struct list));
-  while(!list_is_sorted(self)){
-    list_split(self,self,buff1);
-    list_merge(self,buff1,self);
+  if(list_size(self) == 1){
+    return;
   }
-  free(buff1);
+  struct list *part1 = malloc(sizeof(struct list));
+  struct list *part2 = malloc(sizeof(struct list));
+  list_create(part1);
+  list_create(part2);
+  list_split(self, part1, part2);
+  list_merge_sort(part1);
+  list_merge_sort(part2);
+  list_merge(self, part1, part2);
+  free(part1);
+  free(part2);
 }
 
 
@@ -607,12 +613,53 @@ size_t tree_height(const struct tree *self) {
   else return tree_node_height(self->root);
 }
 
+void pre_order_partial(struct tree_node *node, tree_func_t func, void *user_data){
+  func(node->data,user_data);
+  if(node->left != NULL){
+    pre_order_partial(node->left,func,user_data);
+  }
+  if(node->right != NULL){
+    pre_order_partial(node->right,func,user_data);
+  }
+}
 
-void tree_walk_pre_order(const struct tree *self, tree_func_t func, void *user_data)  {
+void tree_walk_pre_order(const struct tree *self, tree_func_t func, void *user_data){
+  if(tree_empty(self))return;
+  else{
+    pre_order_partial(self->root,func,user_data);
+  }
+}
+
+void in_order_partial(struct tree_node *node, tree_func_t func, void *user_data){
+  if(node->left != NULL){
+    in_order_partial(node->left,func,user_data);
+  }
+  func(node->data,user_data);
+  if(node->right != NULL){
+    in_order_partial(node->right,func,user_data);
+  }
 }
 
 void tree_walk_in_order(const struct tree *self, tree_func_t func, void *user_data) {
+  if(tree_empty(self))return;
+  else{
+    in_order_partial(self->root,func,user_data);
+  }
+}
+
+void post_order_partial(struct tree_node *node, tree_func_t func, void *user_data){
+  if(node->left != NULL){
+    post_order_partial(node->left,func,user_data);
+  }
+  if(node->right != NULL){
+    post_order_partial(node->right,func,user_data);
+  }
+  func(node->data,user_data);
 }
 
 void tree_walk_post_order(const struct tree *self, tree_func_t func, void *user_data) {
+  if(tree_empty(self))return;
+  else{
+    post_order_partial(self->root,func,user_data);
+  }
 }
