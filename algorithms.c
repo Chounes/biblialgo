@@ -8,6 +8,13 @@
 #include <string.h>
 #include <stdio.h>
 
+void print_array(struct array *self){
+  for(size_t i =0; i<self->size; ++i){
+    printf("[%d]", self->data[i]);
+  }
+  printf("\n");
+}
+
 void array_create(struct array *self) {
   self-> capacity = 10;
   self-> size = 0;
@@ -231,6 +238,15 @@ void array_heap_remove_top(struct array *self) {
 
 void list_create(struct list *self) {
   self -> first =  NULL;
+}
+
+void list_print(struct list *self){
+  struct list_node *curr = self->first;
+  while(curr != NULL){
+    printf("%d,",curr->data);
+    curr = curr->next;
+  }
+  printf("\n");
 }
 
 void list_create_from(struct list *self, const int *other, size_t size) {
